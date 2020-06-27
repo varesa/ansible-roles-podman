@@ -1,0 +1,11 @@
+- name: Test if volume {{volume_name}} exists
+  command: podman volume inspect {{volume_name}}
+  failed_when: false
+  changed_when: false
+  check_mode: no
+  register: volume_exists
+
+- name: Create volume {{volume_name}}
+  command: podman volume create {{volume_name}}
+  when: volume_exists.rc != 0
+

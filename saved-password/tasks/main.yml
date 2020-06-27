@@ -1,0 +1,26 @@
+- name: Retrieve password
+  command: cat {{password_path}}
+  failed_when: false
+  changed_when: false
+  register: existing_password
+
+- set_fact:
+    "{{destination_fact}}": "{{existing_password.stdout | trim}}"
+  when: existing_password.rc == 0
+
+- name: Generate new password
+  set_fact:
+    generated_password: "{{ lookup('password', '/dev/null') }}"
+  when: existing_password.rc != 0
+  register: generate_password
+
+- set_fact:
+    "{{destination_fact}}": "{{ generated_password}}"
+  when: existing_password.rc != 0
+
+- name: Save generated password
+  copy:
+      dest: "{{password_path}}"
+      content: "{{generated_password}}"
+  when: existing_password.rc != 0
+
