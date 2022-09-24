@@ -1,0 +1,43 @@
+# - name: ansible create directory example
+#   file: 
+#     path: /home/{{username}}/.config/systemd/user/
+#     state: directory
+
+- name: Create service for {{container_name}}
+  copy:
+    dest: /etc/systemd/system/{{container_name}}.service
+    content: |
+        [Unit]
+        User={{username}}
+
+        [Service]
+        Restart=on-failure
+        Environment="PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+        # ExecStartPre=+sh -c "if ! test -d /run/elias; then mkdir /run/elias; chown elias:elias /run/elias; fi"
+        # ExecStartPre=-/usr/bin/podman rm {{container_name}}
+        
+        # This works; file was created
+        ExecStartPre=bash -c "echo foo > /home/elias/podman.log"
+        ExecStart=bash -c "/usr/bin/podman run --conmon-pidfile /run/elias/%n-pid --rm {{container_options}} --name {{container_name}} {{container_image}} {{container_command}} 2>/home/elias/podman_stderr.log > /home/elias/podman_stdout.log"
+        PIDFile=/run/elias/%n-pid
+
+        [Install]
+        WantedBy=multi-user.target
+  register: container_unit
+
+- name: reload systemd unit
+  command: systemctl daemon-reload
+  when: container_unit.changed
+
+- name: restart {{container_name}} if unit changed
+  when: container_unit.changed
+  service:
+    name: "{{container_name}}"
+    state: restarted
+
+- name: start {{container_name}} if necessary
+  service:
+    name: "{{container_name}}"
+    state: started
+    enabled: true
+
