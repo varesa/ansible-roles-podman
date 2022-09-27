@@ -18,7 +18,11 @@
         # Run only if run as user
         {% if container_user | default(False) %}
         User={{ container_user }}
-        ExecStartPre=+sh -c "if ! test -d /run/{{ container_user }}; then mkdir /run/{{ container_user }}; chown {{ container_user }}:{{ container_user }}/run/{{ container_user }}; fi"
+        ExecStartPre=+sh -c "if ! test -d /run/{{ container_user }};    \
+                then mkdir /run/{{ container_user }};                   \
+                chown {{ container_user }}:{{ container_user }}         \
+                /run/{{ container_user }};                              \
+                fi"
         {% endif %}
 
         {% set podman = "/usr/bin/podman" %}
